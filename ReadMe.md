@@ -20,3 +20,27 @@ Prerequisites
 Documentation
 -------------
 Documentation is pretty rough. 
+
+
+# Risk Simulation Pipeline (Python)
+
+This project simulates a front-to-back risk pipeline similar to Murex.
+
+## Features
+- Synthetic position generation
+- Market data ingestion (yfinance)
+- Greeks calculation using QuantLib
+- Historical Simulation VaR
+- Stressed VaR
+- Hierarchical aggregation (Portfolio → Desk → Unit)
+
+## Architecture
+- Data Layer
+- Pricing Layer
+- Risk Layer
+- Aggregation Layer
+
+## Run
+```bash
+pip install -r requirements.txt
+python main.py
