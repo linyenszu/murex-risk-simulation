@@ -43,7 +43,7 @@ This project simulates a front-to-back risk pipeline similar to Murex.
 
 ## Installation
 ```bash
-git clone https://github.com/linyenszu/murex-risk-simulation.git
-cd murex-risk-simulation
+git clone https://github.com/linyenszu/py-risk-simulation.git
+cd py-risk-simulation
 pip install -r requirements.txt
 python main.py
