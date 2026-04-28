@@ -7,6 +7,8 @@ from src.data.generate_positions import generate_synthetic_positions
 from src.data.generate_structure import generate_structure
 from src.data.market_data import fetch_historical_market_data, get_latest_prices
 from src.pricing.greeks import calculate_position_greeks
+from src.risk.svar import calculate_stressed_var
+from src.risk.var import calculate_historical_var
 from src.utils.helpers import ensure_parent
 from src.utils.logger import get_logger
 
@@ -44,6 +46,19 @@ def main() -> None:
     logger.info('Calculating instrument-level Greeks and NPV')
     position_greeks = calculate_position_greeks(merged, valuation_date, settings)
     position_greeks.to_csv(ensure_parent(settings.greeks_output_filename), index=False)
+
+    logger.info('Calculating portfolio VaR and stressed VaR')
+    var_result = calculate_historical_var(position_greeks, market_data_df, valuation_date, settings)
+    svar_result = calculate_stressed_var(position_greeks, var_result['factor_changes'], valuation_date, settings)
+    portfolio_var = pd.DataFrame([
+        {
+            'CurrentNPV': var_result['current_npv'],
+            'ScenarioCount': var_result['scenario_count'],
+            'VaR_99': var_result['var_99'],
+            'sVaR_99': svar_result['svar_99'],
+        }
+    ])
+    portfolio_var.to_csv(ensure_parent(settings.portfolio_var_filename), index=False)
 
 
 if __name__ == '__main__':
