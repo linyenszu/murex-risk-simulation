@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
+from src.aggregation.hierarchy import build_reports
 from src.config.settings import Settings
 from src.data.generate_positions import generate_synthetic_positions
 from src.data.generate_structure import generate_structure
@@ -59,6 +60,16 @@ def main() -> None:
         }
     ])
     portfolio_var.to_csv(ensure_parent(settings.portfolio_var_filename), index=False)
+
+    logger.info('Building hierarchy reports')
+    report_by_desk, report_by_unit = build_reports(position_greeks, market_data_df, valuation_date, settings)
+    report_by_desk.to_csv(ensure_parent(settings.report_by_desk_filename), index=False)
+    report_by_unit.to_csv(ensure_parent(settings.report_by_unit_filename), index=False)
+
+    logger.info('Done')
+    logger.info('Portfolio summary\n%s', portfolio_var.to_string(index=False))
+    logger.info('Desk report\n%s', report_by_desk.to_string(index=False))
+    logger.info('Unit report\n%s', report_by_unit.to_string(index=False))
 
 
 if __name__ == '__main__':
