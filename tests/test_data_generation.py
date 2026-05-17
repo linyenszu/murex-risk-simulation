@@ -9,11 +9,11 @@ from src.data.market_data import enrich_positions_with_market, get_market_data, 
 
 def test_generate_synthetic_positions_schema_and_dates() -> None:
     positions = generate_synthetic_positions("2025-04-04")
-    assert len(positions) == 10
+    assert len(positions) == 16
     assert {"PositionID", "InstrumentType", "Ticker", "Quantity", "Portfolio", "Maturity", "Strike", "OptionType"}.issubset(positions.columns)
     assert pd.api.types.is_datetime64_any_dtype(positions["Maturity"])
     assert positions["PositionID"].is_unique
-    assert set(positions["InstrumentType"]) == {"Stock", "FX Forward", "European Option"}
+    assert {"Stock", "FX Forward", "European Option", "Equity Future", "Zero Coupon Bond", "Fixed Rate Bond", "Interest Rate Swap"}.issubset(set(positions["InstrumentType"]))
 
 
 def test_generate_structure_maps_each_portfolio_once() -> None:
@@ -41,7 +41,7 @@ def test_get_market_data_backwards_compatible_wrapper() -> None:
 def test_enrich_positions_with_market_adds_hierarchy_price_and_stock_market_value() -> None:
     positions = generate_synthetic_positions("2025-04-04")
     structure = generate_structure()
-    market = simulate_market_data(("AAPL", "GOOG", "EURUSD=X", "GBPUSD=X"), "2025-04-04", years=1, seed=1)
+    market = simulate_market_data(("AAPL", "GOOG", "EURUSD=X", "GBPUSD=X", "US10Y", "SOFR"), "2025-04-04", years=1, seed=1)
     enriched = enrich_positions_with_market(positions, structure, market, "2025-04-04")
     assert enriched["TradingDesk"].notna().all()
     assert enriched["Unit"].notna().all()

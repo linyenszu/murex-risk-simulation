@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import pandas as pd
-import numpy as np
 from src.pricing.instruments import MarketContext
 from src.risk.revaluation import portfolio_pnl_distribution, revalue_positions, scenario_prices
 
 
 def historical_log_returns(market_data: pd.DataFrame) -> pd.DataFrame:
-    return np.log((market_data / market_data.shift(1))).dropna()
+    return (market_data / market_data.shift(1)).apply(lambda x: __import__("numpy").log(x)).dropna()
 
 
 def var_from_pnl(pnl: pd.Series, confidence_level: float) -> float:

@@ -14,7 +14,7 @@ class RiskSettings:
     base_currency: str = "USD"
     raw_data_dir: Path = Path("data/raw")
     processed_data_dir: Path = Path("data/processed")
-    tickers: tuple[str, ...] = ("AAPL", "GOOG", "EURUSD=X", "GBPUSD=X")
+    tickers: tuple[str, ...] = ("AAPL", "GOOG", "EURUSD=X", "GBPUSD=X", "US10Y", "SOFR")
     risk_free_rate: float = 0.02
     dividend_yield: float = 0.00
     ticker_vols: dict[str, float] | None = None
@@ -25,6 +25,8 @@ class RiskSettings:
             "GOOG": 0.25,
             "EURUSD=X": 0.15,
             "GBPUSD=X": 0.12,
+            "US10Y": 0.01,
+            "SOFR": 0.005,
         }
 
     def validate(self) -> None:

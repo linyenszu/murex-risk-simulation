@@ -9,9 +9,9 @@ def simulate_market_data(tickers: tuple[str, ...], valuation_date: str, years: i
     rng = np.random.default_rng(seed)
     end = pd.Timestamp(valuation_date)
     dates = pd.bdate_range(end=end, periods=years * 252)
-    start_prices = {"AAPL": 170.0, "GOOG": 140.0, "EURUSD=X": 1.08, "GBPUSD=X": 1.25}
-    vols = {"AAPL": 0.022, "GOOG": 0.024, "EURUSD=X": 0.0045, "GBPUSD=X": 0.0055}
-    drifts = {"AAPL": 0.0004, "GOOG": 0.00035, "EURUSD=X": 0.00002, "GBPUSD=X": 0.00001}
+    start_prices = {"AAPL": 170.0, "GOOG": 140.0, "EURUSD=X": 1.08, "GBPUSD=X": 1.25, "US10Y": 0.04, "SOFR": 0.035}
+    vols = {"AAPL": 0.022, "GOOG": 0.024, "EURUSD=X": 0.0045, "GBPUSD=X": 0.0055, "US10Y": 0.015, "SOFR": 0.01}
+    drifts = {"AAPL": 0.0004, "GOOG": 0.00035, "EURUSD=X": 0.00002, "GBPUSD=X": 0.00001, "US10Y": 0.0, "SOFR": 0.0}
     data: dict[str, np.ndarray] = {}
     for ticker in tickers:
         returns = rng.normal(drifts.get(ticker, 0.0001), vols.get(ticker, 0.01), len(dates))

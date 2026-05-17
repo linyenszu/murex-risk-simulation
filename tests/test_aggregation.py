@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from src.aggregation.hierarchy import aggregate_greeks, hierarchy_report
 from src.pricing.greeks import GREEK_COLUMNS
 
@@ -8,7 +10,7 @@ def test_aggregate_greeks_by_trading_desk(priced_positions) -> None:
     report = aggregate_greeks(priced_positions, ["TradingDesk"])
     assert set(report["TradingDesk"]) == set(priced_positions["TradingDesk"].unique())
     assert set(GREEK_COLUMNS).issubset(report.columns)
-    assert report["NPV"].sum() == priced_positions["NPV"].sum()
+    assert report["NPV"].sum() == pytest.approx(priced_positions["NPV"].sum())
 
 
 def test_hierarchy_report_contains_var_and_svar(priced_positions, market, market_context) -> None:

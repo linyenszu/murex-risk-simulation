@@ -1,13 +1,13 @@
-# Py Risk Simulation
+# Murex Risk Simulation
 
 Production-style Python repository that simulates a Murex-like front-office risk pipeline for positions, market data, Greeks, Historical Simulation VaR, stressed VaR, and desk/unit aggregation.
 
 ## Capabilities
 
-- Generate synthetic stock, FX forward, and European option positions
+- Generate synthetic multi-asset positions: stocks, equity futures, FX forwards, European options, zero-coupon bonds, fixed-rate bonds, and vanilla interest-rate swaps
 - Generate portfolio-to-desk-to-unit hierarchy data
 - Load market data with a deterministic fallback for offline execution
-- Price instruments and calculate Greeks
+- Price instruments and calculate Greeks / rate sensitivities across equity, FX, options, futures, rates, and swaps
 - Revalue positions under historical scenarios
 - Compute VaR and stressed VaR
 - Aggregate risk by portfolio, trading desk, and business unit
@@ -15,7 +15,7 @@ Production-style Python repository that simulates a Murex-like front-office risk
 
 ## Repository Layout
 
-See `Repository_Structure.txt` for the requested structure this implementation follows.
+See `Repository Structure.txt` for the requested structure this implementation follows.
 
 ## Quick Start
 
@@ -38,4 +38,17 @@ Outputs are written to `data/processed/` and `data/outputs/`.
 
 ## Notes
 
-QuantLib-Python is optional. If it is unavailable, the project uses a pure-Python Black-Scholes fallback for European options so the repo remains runnable in lightweight environments.
+QuantLib-Python is optional. If it is unavailable, the project uses pure-Python pricing functions for European options, futures, bonds, FX forwards, and swaps so the repo remains runnable in lightweight environments.
+
+## Supported Trade Types
+
+| InstrumentType | Pricing approach | Primary risk driver |
+| --- | --- | --- |
+| `Stock` | Linear spot valuation | Equity spot |
+| `Equity Future` | Discounted futures payoff | Equity spot / futures strike |
+| `FX Forward` | Interest-rate parity forward valuation | FX spot and foreign/domestic rates |
+| `European Option` | Black-Scholes price and Greeks | Spot, strike, vol, time, rates |
+| `Zero Coupon Bond` | Discounted cash flow | Yield/rate shock |
+| `Fixed Rate Bond` | Coupon bond discounted cash flow | Yield/rate shock |
+| `Interest Rate Swap` | Par-rate spread times annuity approximation | SOFR/rate shock |
+

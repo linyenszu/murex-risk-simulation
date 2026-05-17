@@ -2,9 +2,32 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from src.pricing.instruments import MarketContext, black_scholes_price_greeks, price_fx_forward, price_stock
+from src.pricing.instruments import (
+    MarketContext,
+    black_scholes_price_greeks,
+    price_equity_future,
+    price_fixed_rate_bond,
+    price_fx_forward,
+    price_interest_rate_swap,
+    price_stock,
+    price_zero_coupon_bond,
+)
 
 GREEK_COLUMNS = ["NPV", "Delta", "Gamma", "Vega", "Theta", "Rho"]
+
+
+def _optional_float(row: pd.Series, name: str, default: float) -> float:
+    value = row.get(name, default)
+    if pd.isna(value):
+        return default
+    return float(value)
+
+
+def _optional_str(row: pd.Series, name: str, default: str) -> str:
+    value = row.get(name, default)
+    if pd.isna(value):
+        return default
+    return str(value)
 
 
 def price_position(row: pd.Series, ctx: MarketContext, override_spot: float | None = None) -> dict[str, float]:
@@ -29,6 +52,48 @@ def price_position(row: pd.Series, ctx: MarketContext, override_spot: float | No
             option_type=str(row["OptionType"]),
         )
         return {k: v * quantity for k, v in unit.items()}
+
+    if instrument_type == "Equity Future":
+        return price_equity_future(
+            quantity=quantity,
+            spot=spot,
+            strike=float(row["Strike"]),
+            maturity=row["Maturity"],
+            ctx=ctx,
+            multiplier=_optional_float(row, "ContractMultiplier", 1.0),
+        )
+
+    if instrument_type == "Zero Coupon Bond":
+        return price_zero_coupon_bond(
+            quantity=quantity,
+            face_value=_optional_float(row, "FaceValue", 1000.0),
+            maturity=row["Maturity"],
+            ctx=ctx,
+            yield_rate=spot,
+        )
+
+    if instrument_type == "Fixed Rate Bond":
+        return price_fixed_rate_bond(
+            quantity=quantity,
+            face_value=_optional_float(row, "FaceValue", 1000.0),
+            coupon_rate=_optional_float(row, "CouponRate", 0.04),
+            maturity=row["Maturity"],
+            ctx=ctx,
+            yield_rate=spot,
+            frequency=int(_optional_float(row, "PaymentFrequency", 2.0)),
+        )
+
+    if instrument_type == "Interest Rate Swap":
+        return price_interest_rate_swap(
+            quantity=quantity,
+            notional=_optional_float(row, "Notional", 1_000_000.0),
+            fixed_rate=_optional_float(row, "FixedRate", 0.03),
+            maturity=row["Maturity"],
+            ctx=ctx,
+            floating_rate=spot,
+            pay_receive=_optional_str(row, "PayReceive", "Payer"),
+            frequency=int(_optional_float(row, "PaymentFrequency", 2.0)),
+        )
 
     return {k: np.nan for k in GREEK_COLUMNS}
 

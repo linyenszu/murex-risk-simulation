@@ -7,7 +7,16 @@ import pytest
 
 from src.pricing.fallback_bs import black_scholes_greeks
 from src.pricing.greeks import GREEK_COLUMNS, calculate_instrument_risk, price_position
-from src.pricing.instruments import MarketContext, black_scholes_price_greeks, price_fx_forward, price_stock
+from src.pricing.instruments import (
+    MarketContext,
+    black_scholes_price_greeks,
+    price_equity_future,
+    price_fixed_rate_bond,
+    price_fx_forward,
+    price_interest_rate_swap,
+    price_stock,
+    price_zero_coupon_bond,
+)
 
 
 def test_black_scholes_call_put_parity_holds() -> None:
@@ -58,3 +67,32 @@ def test_calculate_instrument_risk_preserves_row_count(positions: pd.DataFrame, 
     assert len(priced) == len(positions)
     assert set(GREEK_COLUMNS).issubset(priced.columns)
     assert priced[GREEK_COLUMNS].notna().all().all()
+
+
+def test_price_equity_future_zero_when_strike_equals_spot(market_context: MarketContext) -> None:
+    result = price_equity_future(10, 100.0, 100.0, pd.Timestamp("2025-07-04"), market_context, multiplier=50)
+    assert result["NPV"] == pytest.approx(0.0)
+    assert result["Delta"] > 0
+
+
+def test_price_zero_coupon_bond_decreases_when_yield_increases(market_context: MarketContext) -> None:
+    maturity = pd.Timestamp("2027-04-04")
+    low_yield = price_zero_coupon_bond(1, 1000.0, maturity, market_context, yield_rate=0.03)
+    high_yield = price_zero_coupon_bond(1, 1000.0, maturity, market_context, yield_rate=0.05)
+    assert low_yield["NPV"] > high_yield["NPV"]
+    assert low_yield["Delta"] < 0
+
+
+def test_price_fixed_rate_bond_returns_positive_pv_and_negative_rate_delta(market_context: MarketContext) -> None:
+    result = price_fixed_rate_bond(2, 1000.0, 0.04, pd.Timestamp("2030-04-04"), market_context, yield_rate=0.04)
+    assert result["NPV"] > 0
+    assert result["Delta"] < 0
+
+
+def test_price_interest_rate_swap_directionality(market_context: MarketContext) -> None:
+    maturity = pd.Timestamp("2028-04-04")
+    payer = price_interest_rate_swap(1, 1_000_000, 0.03, maturity, market_context, floating_rate=0.04, pay_receive="Payer")
+    receiver = price_interest_rate_swap(1, 1_000_000, 0.03, maturity, market_context, floating_rate=0.04, pay_receive="Receiver")
+    assert payer["NPV"] > 0
+    assert receiver["NPV"] < 0
+    assert payer["NPV"] == pytest.approx(-receiver["NPV"])

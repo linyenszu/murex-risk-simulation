@@ -17,7 +17,7 @@ from src.utils.helpers import ensure_dir, require_columns
 def test_loaders_roundtrip_and_enrichment(tmp_path: Path) -> None:
     positions = generate_synthetic_positions("2025-04-04")
     structure = generate_structure()
-    market = simulate_market_data(("AAPL", "GOOG", "EURUSD=X", "GBPUSD=X"), "2025-04-04", years=1, seed=5)
+    market = simulate_market_data(("AAPL", "GOOG", "EURUSD=X", "GBPUSD=X", "US10Y", "SOFR"), "2025-04-04", years=1, seed=5)
 
     positions_path = tmp_path / "positions.csv"
     structure_path = tmp_path / "structure.csv"
