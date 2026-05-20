@@ -34,7 +34,20 @@ python scripts/bootstrap_data.py
 python main.py
 ```
 
-Outputs are written to `data/processed/` and `data/outputs/`.
+Option trades can now be priced from `main.py` with multiple engines:
+
+```bash
+# Default: write Black-Scholes vs Monte Carlo comparison
+python main.py --option-pricing-engine both --mc-paths 100000
+
+# Analytic option prices only
+python main.py --option-pricing-engine black-scholes
+
+# Monte Carlo option prices only
+python main.py --option-pricing-engine monte-carlo --mc-paths 250000 --mc-seed 7
+```
+
+Outputs are written to `data/processed/` and `data/outputs/`. The main pipeline now writes `data/processed/option_pricing_comparison.csv` with Black-Scholes prices, Monte Carlo prices, standard errors, confidence intervals, and MC-minus-BS differences for European option trades.
 
 ## Notes
 
@@ -52,3 +65,56 @@ QuantLib-Python is optional. If it is unavailable, the project uses pure-Python 
 | `Fixed Rate Bond` | Coupon bond discounted cash flow | Yield/rate shock |
 | `Interest Rate Swap` | Par-rate spread times annuity approximation | SOFR/rate shock |
 
+
+## Monte Carlo Option Pricing
+
+This version adds a production-style Monte Carlo engine for European options under risk-neutral Geometric Brownian Motion.
+
+Key concepts implemented:
+
+- Geometric Brownian Motion terminal-price simulation
+- Random path generation for diagnostics and future path-dependent products
+- Risk-neutral discounted payoff valuation
+- Antithetic variates for variance reduction
+- Confidence intervals and standard errors
+- Convergence analysis across path counts
+- Black-Scholes benchmark comparison
+
+Run the demo:
+
+```bash
+python scripts/run_mc_option_pricing.py
+```
+
+The convergence table is written to:
+
+```text
+data/outputs/mc_option_convergence.csv
+```
+
+Core API:
+
+```python
+from src.pricing.monte_carlo import price_european_option_mc, convergence_analysis
+
+result = price_european_option_mc(
+    spot=100,
+    strike=100,
+    maturity_years=1.0,
+    rate=0.05,
+    volatility=0.20,
+    option_type="Call",
+    num_paths=100_000,
+    seed=42,
+)
+
+convergence = convergence_analysis(
+    spot=100,
+    strike=100,
+    maturity_years=1.0,
+    rate=0.05,
+    volatility=0.20,
+    option_type="Call",
+)
+
+```

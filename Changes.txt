@@ -1,0 +1,30 @@
+Added:
+
+src/pricing/monte_carlo.py
+scripts/run_mc_option_pricing.py
+notebooks/04_monte_carlo_option_pricing.ipynb
+unit tests for GBM paths, payoffs, convergence, and Black-Scholes comparison
+
+Validated:
+
+44 passed
+MC price: 10.467314
+Black-Scholes price: 10.450584
+absolute error: 0.016731
+
+Enhanced main.py with:
+
+--option-pricing-engine black-scholes
+--option-pricing-engine monte-carlo
+--option-pricing-engine both
+--mc-paths
+--mc-seed
+
+New output:
+
+data/processed/option_pricing_comparison.csv
+
+Validated:
+
+47 passed
+python main.py --lookback-days 60 --option-pricing-engine both --mc-paths 5000 works.

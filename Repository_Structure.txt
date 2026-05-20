@@ -19,6 +19,7 @@ murex-risk-simulation/
 │   ├── 01_data_simulation.ipynb
 │   ├── 02_greeks_analysis.ipynb
 │   ├── 03_var_analysis.ipynb
+│   ├── 04_monte_carlo_option_pricing.ipynb
 │
 ├── src/
 │   ├── **init**.py
@@ -39,7 +40,8 @@ murex-risk-simulation/
 │   │   ├── quantlib_setup.py
 │   │   ├── instruments.py     # Pricing wrappers
 │   │   ├── greeks.py          # Delta, Gamma, Vega, etc.
-│   │   └── fallback_bs.py     # Black-Scholes fallback (no QuantLib)
+│   │   ├── fallback_bs.py
+│   │   └── monte_carlo.py     # Black-Scholes fallback (no QuantLib)
 │   │
 │   ├── risk/
 │   │   ├── **init**.py
@@ -65,7 +67,8 @@ murex-risk-simulation/
 │
 ├── scripts/
 │   ├── run_pipeline.sh
-│   └── bootstrap_data.py
+│   ├── bootstrap_data.py
+│   └── run_mc_option_pricing.py
 │
 ├── reports/
 │   ├── figures/
