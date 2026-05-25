@@ -1,4 +1,4 @@
-# Murex Risk Simulation
+# Py Risk Simulation
 
 Production-style Python repository that simulates a Murex-like front-office risk pipeline for positions, market data, Greeks, Historical Simulation VaR, stressed VaR, and desk/unit aggregation.
 
@@ -15,7 +15,7 @@ Production-style Python repository that simulates a Murex-like front-office risk
 
 ## Repository Layout
 
-See `Repository Structure.txt` for the requested structure this implementation follows.
+See `Repository_Structure.txt` for the requested structure this implementation follows.
 
 ## Quick Start
 
@@ -65,6 +65,21 @@ QuantLib-Python is optional. If it is unavailable, the project uses pure-Python 
 | `Fixed Rate Bond` | Coupon bond discounted cash flow | Yield/rate shock |
 | `Interest Rate Swap` | Par-rate spread times annuity approximation | SOFR/rate shock |
 
+## Pricing Models
+
+### Black-Scholes Analytical Model
+
+Supports:
+- European Calls
+- European Puts
+- Greeks:
+  - Delta
+  - Gamma
+  - Vega
+  - Theta
+  - Rho
+
+---
 
 ## Monte Carlo Option Pricing
 

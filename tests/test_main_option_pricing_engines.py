@@ -81,3 +81,26 @@ def test_main_run_writes_option_pricing_comparison(tmp_path: Path) -> None:
     written = pd.read_csv(output_file)
     assert not written.empty
     assert "MonteCarloUnitPrice" in written.columns
+
+
+def test_price_options_with_all_engines_contains_lattice_columns(tmp_path: Path) -> None:
+    instrument_risk, settings = _option_test_frame(tmp_path)
+    ctx = build_market_context(settings)
+
+    comparison = price_options_with_engines(
+        instrument_risk,
+        ctx,
+        option_pricing_engine="all",
+        mc_paths=5_000,
+        mc_seed=11,
+        tree_steps=150,
+    )
+
+    assert not comparison.empty
+    assert comparison["BlackScholesUnitPrice"].notna().all()
+    assert comparison["MonteCarloUnitPrice"].notna().all()
+    assert comparison["BinomialUnitPrice"].notna().all()
+    assert comparison["TrinomialUnitPrice"].notna().all()
+    assert comparison["BinomialMinusBSUnitPrice"].abs().max() < 2.0
+    assert comparison["TrinomialMinusBSUnitPrice"].abs().max() < 2.0
+    assert (comparison["TreeSteps"] == 150).all()

@@ -70,3 +70,29 @@ def black_scholes_greeks(
     vega = spot * df_q * _pdf(d1) * sqrt(t) / 100.0
     rho = rho / 100.0
     return BlackScholesResult(price, delta, gamma, vega, theta, rho)
+
+
+def black_scholes_price(
+    spot: float,
+    strike: float,
+    maturity_years: float | None = None,
+    rate: float = 0.0,
+    volatility: float = 0.2,
+    option_type: str = "Call",
+    dividend_yield: float = 0.0,
+    maturity: float | None = None,
+) -> float:
+    """Backward-compatible convenience wrapper returning only BS price."""
+    if maturity_years is None:
+        if maturity is None:
+            raise ValueError("maturity_years is required")
+        maturity_years = maturity
+    return black_scholes_greeks(
+        spot=spot,
+        strike=strike,
+        maturity_years=maturity_years,
+        rate=rate,
+        volatility=volatility,
+        option_type=option_type,
+        dividend_yield=dividend_yield,
+    ).price

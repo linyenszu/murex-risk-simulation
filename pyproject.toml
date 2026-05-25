@@ -3,8 +3,8 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "murex-risk-simulation"
-version = "0.2.0"
+name = "py-risk-simulation"
+version = "1.0.3"
 description = "Production-style Murex-like risk pipeline for Greeks, Historical VaR, sVaR and hierarchy aggregation"
 requires-python = ">=3.10"
 dependencies = [
