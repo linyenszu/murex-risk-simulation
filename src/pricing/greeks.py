@@ -46,7 +46,7 @@ def price_position(row: pd.Series, ctx: MarketContext, override_spot: float | No
             spot=spot,
             strike=float(row["Strike"]),
             maturity_years=ctx.time_to_maturity(row["Maturity"]),
-            rate=ctx.risk_free_rate,
+            rate=ctx.zero_rate(ctx.time_to_maturity(row["Maturity"])),
             dividend=ctx.dividend_yield,
             vol=ctx.vols.get(row["Ticker"], 0.20),
             option_type=str(row["OptionType"]),
@@ -69,7 +69,7 @@ def price_position(row: pd.Series, ctx: MarketContext, override_spot: float | No
             face_value=_optional_float(row, "FaceValue", 1000.0),
             maturity=row["Maturity"],
             ctx=ctx,
-            yield_rate=spot,
+            yield_rate=None,
         )
 
     if instrument_type == "Fixed Rate Bond":
@@ -79,7 +79,7 @@ def price_position(row: pd.Series, ctx: MarketContext, override_spot: float | No
             coupon_rate=_optional_float(row, "CouponRate", 0.04),
             maturity=row["Maturity"],
             ctx=ctx,
-            yield_rate=spot,
+            yield_rate=None,
             frequency=int(_optional_float(row, "PaymentFrequency", 2.0)),
         )
 
@@ -90,7 +90,7 @@ def price_position(row: pd.Series, ctx: MarketContext, override_spot: float | No
             fixed_rate=_optional_float(row, "FixedRate", 0.03),
             maturity=row["Maturity"],
             ctx=ctx,
-            floating_rate=spot,
+            floating_rate=None,
             pay_receive=_optional_str(row, "PayReceive", "Payer"),
             frequency=int(_optional_float(row, "PaymentFrequency", 2.0)),
         )

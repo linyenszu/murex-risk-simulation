@@ -1,74 +1,121 @@
-murex-risk-simulation/
+py-risk-simulation/
 │
-├── README.md
-├── LICENSE
-├── pyproject.toml
+├── ReadMe.md
+├── Changes.txt
+├── Repository_Structure.txt
 ├── requirements.txt
+├── pyproject.toml
 ├── setup.py
 ├── Makefile
 ├── Dockerfile
 ├── .gitignore
 ├── .env.example
 │
+├── .github/
+│   └── workflows/
+│       └── ci.yml
+│
+├── docs/
+│   └── model_methodology.md
+│
 ├── data/
-│   ├── raw/                   # Raw downloaded / simulated data
-│   ├── processed/             # Cleaned & transformed datasets
-│   └── outputs/               # VaR results, reports, exports
+│   ├── raw/
+│   │   ├── positions.csv
+│   │   ├── structure.csv
+│   │   ├── historical_market_data.csv
+│   │   └── bond_market_quotes.csv
+│   │
+│   ├── processed/
+│   │   ├── positions_enriched.csv
+│   │   ├── instrument_risk.csv
+│   │   ├── portfolio_pnl.csv
+│   │   ├── risk_report_by_desk.csv
+│   │   ├── risk_report_by_unit.csv
+│   │   ├── option_pricing_comparison.csv
+│   │   └── zero_coupon_curve.csv
+│   │
+│   └── outputs/
+│       └── mc_option_convergence.csv
 │
 ├── notebooks/
 │   ├── 01_data_simulation.ipynb
 │   ├── 02_greeks_analysis.ipynb
 │   ├── 03_var_analysis.ipynb
 │   ├── 04_monte_carlo_option_pricing.ipynb
+│   └── 05_Monte_Carlo_Lattice_European_Option_Pricing.ipynb
+│
+├── scripts/
+│   ├── **init**.py
+│   ├── bootstrap_data.py
+│   ├── bootstrap_yield_curve.py
+│   ├── run_mc_option_pricing.py
+│   ├── run_pipeline.sh
+│   │
+│   └── data/
+│       ├── raw/
+│       │   ├── positions.csv
+│       │   ├── structure.csv
+│       │   └── historical_market_data.csv
+│       │
+│       └── processed/
+│           └── positions_enriched.csv
 │
 ├── src/
 │   ├── **init**.py
 │   │
 │   ├── config/
 │   │   ├── **init**.py
-│   │   └── settings.py        # Global config (paths, dates, params)
+│   │   └── settings.py
 │   │
 │   ├── data/
 │   │   ├── **init**.py
 │   │   ├── generate_positions.py
 │   │   ├── generate_structure.py
 │   │   ├── market_data.py
-│   │   └── loaders.py         # Load/merge datasets
+│   │   └── loaders.py
 │   │
 │   ├── pricing/
 │   │   ├── **init**.py
 │   │   ├── quantlib_setup.py
-│   │   ├── instruments.py     # Pricing wrappers
-│   │   ├── greeks.py          # Delta, Gamma, Vega, etc.
+│   │   ├── instruments.py
+│   │   ├── greeks.py
 │   │   ├── fallback_bs.py
-│   │   └── monte_carlo.py     # Black-Scholes fallback (no QuantLib)
+│   │   ├── monte_carlo.py
+│   │   ├── lattice_models.py
+│   │   └── yield_curve.py
 │   │
 │   ├── risk/
 │   │   ├── **init**.py
-│   │   ├── revaluation.py     # Scenario revaluation engine
-│   │   ├── var.py             # Historical VaR
-│   │   └── svar.py            # Stressed VaR
+│   │   ├── revaluation.py
+│   │   ├── var.py
+│   │   └── svar.py
 │   │
 │   ├── aggregation/
 │   │   ├── **init**.py
-│   │   └── hierarchy.py       # Portfolio → Desk → Unit rollups
+│   │   └── hierarchy.py
 │   │
-│   ├── utils/
-│   │   ├── **init**.py
-│   │   ├── logger.py
-│   │   ├── helpers.py
-│   │   └── decorators.py
+│   └── utils/
+│       ├── **init**.py
+│       ├── decorators.py
+│       ├── helpers.py
+│       └── logger.py
 │
 ├── tests/
-│   ├── **init**.py
+│   ├── conftest.py
+│   ├── test_aggregation.py
+│   ├── test_config.py
+│   ├── test_data_generation.py
 │   ├── test_greeks.py
-│   ├── test_var.py
+│   ├── test_lattice_models.py
+│   ├── test_loaders_utils_pipeline.py
+│   ├── test_main_option_pricing_engines.py
+│   ├── test_monte_carlo_option_pricing.py
+│   ├── test_pricing_models.py
 │   ├── test_revaluation.py
-│
-├── scripts/
-│   ├── run_pipeline.sh
-│   ├── bootstrap_data.py
-│   └── run_mc_option_pricing.py
+│   ├── test_risk_models.py
+│   ├── test_var.py
+│   ├── test_yield_curve.py
+│   └── test_yield_curve_pricing_application.py
 │
 ├── reports/
 │   ├── figures/
@@ -77,4 +124,4 @@ murex-risk-simulation/
 ├── logs/
 │   └── app.log
 │
-└── main.py                    # Entry point (CLI pipeline runner)
+└── main.py

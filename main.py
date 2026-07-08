@@ -19,6 +19,7 @@ from src.pricing.lattice_models import (
     price_european_option_binomial,
     price_european_option_trinomial,
 )
+from src.pricing.yield_curve import ZeroCouponYieldCurve, bootstrap_zero_coupon_curve
 from src.risk.var import calculate_var
 from src.utils.helpers import ensure_dir
 from src.utils.logger import get_logger
@@ -59,10 +60,31 @@ def parse_args() -> argparse.Namespace:
         default=200,
         help="Number of risk-neutral GBM lattice steps for binomial/trinomial engines.",
     )
+    parser.add_argument(
+        "--bond-quotes-path",
+        default="data/raw/bond_market_quotes.csv",
+        help="CSV file with bond quotes used to bootstrap the zero-coupon discount curve.",
+    )
+    parser.add_argument(
+        "--no-yield-curve",
+        action="store_true",
+        help="Use flat risk_free_rate instead of bootstrapped zero-coupon curve.",
+    )
     return parser.parse_args()
 
 
-def build_market_context(settings: RiskSettings) -> MarketContext:
+def load_zero_curve(bond_quotes_path: str | Path | None) -> ZeroCouponYieldCurve | None:
+    """Load and bootstrap a zero-coupon curve from bond-market quotes."""
+    if bond_quotes_path is None:
+        return None
+    path = Path(bond_quotes_path)
+    if not path.exists():
+        return None
+    bond_quotes = pd.read_csv(path)
+    return ZeroCouponYieldCurve(bootstrap_zero_coupon_curve(bond_quotes))
+
+
+def build_market_context(settings: RiskSettings, zero_curve: ZeroCouponYieldCurve | None = None) -> MarketContext:
     """Create the market context shared by pricing, revaluation, and VaR."""
     return MarketContext(
         valuation_date=pd.Timestamp(settings.valuation_date),
@@ -70,6 +92,7 @@ def build_market_context(settings: RiskSettings) -> MarketContext:
         dividend_yield=settings.dividend_yield,
         vols=settings.vols(),
         fx_foreign_rates={"EURUSD=X": 0.015, "GBPUSD=X": 0.018},
+        zero_curve=zero_curve,
     )
 
 
@@ -167,7 +190,7 @@ def price_options_with_engines(
                 spot=spot,
                 strike=strike,
                 maturity_years=maturity_years,
-                rate=ctx.risk_free_rate,
+                rate=ctx.zero_rate(maturity_years),
                 volatility=volatility,
                 option_type=option_type,
                 dividend_yield=ctx.dividend_yield,
@@ -186,7 +209,7 @@ def price_options_with_engines(
                 spot=spot,
                 strike=strike,
                 maturity_years=maturity_years,
-                rate=ctx.risk_free_rate,
+                rate=ctx.zero_rate(maturity_years),
                 volatility=volatility,
                 option_type=option_type,
                 num_paths=mc_paths,
@@ -207,7 +230,7 @@ def price_options_with_engines(
                 spot=spot,
                 strike=strike,
                 maturity_years=maturity_years,
-                rate=ctx.risk_free_rate,
+                rate=ctx.zero_rate(maturity_years),
                 volatility=volatility,
                 option_type=option_type,
                 dividend_yield=ctx.dividend_yield,
@@ -223,7 +246,7 @@ def price_options_with_engines(
                 spot=spot,
                 strike=strike,
                 maturity_years=maturity_years,
-                rate=ctx.risk_free_rate,
+                rate=ctx.zero_rate(maturity_years),
                 volatility=volatility,
                 option_type=option_type,
                 dividend_yield=ctx.dividend_yield,
@@ -278,6 +301,8 @@ def run(
     mc_paths: int = 100_000,
     mc_seed: int | None = None,
     tree_steps: int = 200,
+    bond_quotes_path: str | Path | None = "data/raw/bond_market_quotes.csv",
+    use_yield_curve: bool = True,
 ) -> dict[str, pd.DataFrame | float]:
     settings.validate()
     log = get_logger()
@@ -292,7 +317,14 @@ def run(
     market = load_market_data(settings.tickers, settings.valuation_date, seed=settings.random_seed)
     enriched = enrich_positions_with_market(positions, structure, market, settings.valuation_date)
 
-    ctx = build_market_context(settings)
+    zero_curve = load_zero_curve(bond_quotes_path) if use_yield_curve else None
+    if zero_curve is not None:
+        log.info("Bootstrapped zero-coupon curve from %s", bond_quotes_path)
+        zero_curve.to_frame().to_csv(output_dir / "zero_coupon_curve.csv", index=False)
+    else:
+        log.info("Using flat risk-free rate %.4f", settings.risk_free_rate)
+
+    ctx = build_market_context(settings, zero_curve=zero_curve)
 
     log.info("Pricing instruments and calculating Greeks")
     instrument_risk = calculate_instrument_risk(enriched, ctx)
@@ -352,6 +384,7 @@ def run(
         "portfolio_pnl": pnl,
         "desk_report": desk_report,
         "unit_report": unit_report,
+        "zero_curve": zero_curve.to_frame() if zero_curve is not None else pd.DataFrame(),
     }
 
 
@@ -367,4 +400,6 @@ if __name__ == "__main__":
         mc_paths=args.mc_paths,
         mc_seed=args.mc_seed,
         tree_steps=args.tree_steps,
+        bond_quotes_path=args.bond_quotes_path,
+        use_yield_curve=not args.no_yield_curve,
     )

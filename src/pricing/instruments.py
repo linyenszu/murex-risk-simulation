@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import erf, exp, log, pi, sqrt
+from typing import Any
 import pandas as pd
 
 
@@ -20,9 +21,38 @@ class MarketContext:
     dividend_yield: float
     vols: dict[str, float]
     fx_foreign_rates: dict[str, float]
+    zero_curve: Any | None = None
 
     def time_to_maturity(self, maturity: pd.Timestamp) -> float:
         return max((pd.Timestamp(maturity) - self.valuation_date).days / 365.0, 0.0)
+
+    def discount_factor(self, maturity_years: float) -> float:
+        """Return discount factor from zero curve when available, else flat rate."""
+        t = max(float(maturity_years), 0.0)
+        if t == 0.0:
+            return 1.0
+        if self.zero_curve is not None:
+            return float(self.zero_curve.discount_factor(t))
+        return exp(-self.risk_free_rate * t)
+
+    def zero_rate(self, maturity_years: float) -> float:
+        """Return continuously compounded zero rate for maturity."""
+        t = max(float(maturity_years), 0.0)
+        if t == 0.0:
+            return self.risk_free_rate
+        if self.zero_curve is not None:
+            return float(self.zero_curve.zero_rate(t))
+        return self.risk_free_rate
+
+    def forward_rate(self, start_years: float, end_years: float) -> float:
+        """Return continuously compounded forward rate from the curve."""
+        start = float(start_years)
+        end = float(end_years)
+        if not 0 <= start < end:
+            raise ValueError("Require 0 <= start_years < end_years")
+        if self.zero_curve is not None:
+            return float(self.zero_curve.forward_rate(start, end))
+        return self.risk_free_rate
 
 
 def black_scholes_price_greeks(
@@ -66,7 +96,7 @@ def price_stock(quantity: float, spot: float) -> dict[str, float]:
 def price_fx_forward(quantity: float, spot: float, strike: float, maturity: pd.Timestamp, ticker: str, ctx: MarketContext) -> dict[str, float]:
     t = ctx.time_to_maturity(maturity)
     foreign_rate = ctx.fx_foreign_rates.get(ticker, 0.0)
-    domestic_df = exp(-ctx.risk_free_rate * t)
+    domestic_df = ctx.discount_factor(t)
     foreign_df = exp(-foreign_rate * t)
     fwd = spot * foreign_df / domestic_df
     npv = quantity * (fwd - strike) * domestic_df
@@ -80,7 +110,7 @@ def price_equity_future(quantity: float, spot: float, strike: float, maturity: p
     Positive quantity means long futures exposure. Strike is the contract price.
     """
     t = ctx.time_to_maturity(maturity)
-    discount = exp(-ctx.risk_free_rate * t)
+    discount = ctx.discount_factor(t)
     npv = quantity * multiplier * (spot - strike) * discount
     delta = quantity * multiplier * discount
     theta = -ctx.risk_free_rate * npv / 365.0
@@ -88,9 +118,9 @@ def price_equity_future(quantity: float, spot: float, strike: float, maturity: p
 
 
 def price_zero_coupon_bond(quantity: float, face_value: float, maturity: pd.Timestamp, ctx: MarketContext, yield_rate: float | None = None) -> dict[str, float]:
-    y = ctx.risk_free_rate if yield_rate is None else yield_rate
     t = ctx.time_to_maturity(maturity)
-    unit_pv = face_value * exp(-y * t)
+    y = ctx.zero_rate(t) if yield_rate is None else yield_rate
+    unit_pv = face_value * (ctx.discount_factor(t) if yield_rate is None else exp(-y * t))
     npv = quantity * unit_pv
     # Delta here is dollar sensitivity to one absolute rate point. Rho is per 1 bp.
     rate_delta = -t * npv
@@ -106,8 +136,8 @@ def price_fixed_rate_bond(
     yield_rate: float | None = None,
     frequency: int = 2,
 ) -> dict[str, float]:
-    y = ctx.risk_free_rate if yield_rate is None else yield_rate
     t = ctx.time_to_maturity(maturity)
+    y = ctx.zero_rate(t) if yield_rate is None else yield_rate
     if t <= 0:
         return {"NPV": 0.0, "Delta": 0.0, "Gamma": 0.0, "Vega": 0.0, "Theta": 0.0, "Rho": 0.0}
     n_periods = max(int(round(t * frequency)), 1)
@@ -119,7 +149,7 @@ def price_fixed_rate_bond(
     for i in range(1, n_periods + 1):
         cash_flow = coupon + (face_value if i == n_periods else 0.0)
         time_i = i / frequency
-        df = (1.0 + period_rate) ** (-i)
+        df = ctx.discount_factor(time_i) if yield_rate is None else (1.0 + period_rate) ** (-i)
         pv += cash_flow * df
         duration_weight += time_i * cash_flow * df
         convexity_weight += time_i * time_i * cash_flow * df
@@ -148,8 +178,10 @@ def price_interest_rate_swap(
     if t <= 0:
         return {"NPV": 0.0, "Delta": 0.0, "Gamma": 0.0, "Vega": 0.0, "Theta": 0.0, "Rho": 0.0}
     n_periods = max(int(round(t * frequency)), 1)
-    annuity = sum((1.0 / frequency) * exp(-ctx.risk_free_rate * i / frequency) for i in range(1, n_periods + 1))
+    annuity = sum((1.0 / frequency) * ctx.discount_factor(i / frequency) for i in range(1, n_periods + 1))
     direction = 1.0 if str(pay_receive).lower().startswith("payer") else -1.0
-    npv = quantity * direction * notional * (floating_rate - fixed_rate) * annuity
+    par_rate = ctx.forward_rate(0.0, t)
+    effective_float_rate = par_rate if floating_rate is None else floating_rate
+    npv = quantity * direction * notional * (effective_float_rate - fixed_rate) * annuity
     delta = quantity * direction * notional * annuity
     return {"NPV": npv, "Delta": delta, "Gamma": 0.0, "Vega": 0.0, "Theta": -ctx.risk_free_rate * npv / 365.0, "Rho": delta / 100.0}

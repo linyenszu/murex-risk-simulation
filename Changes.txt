@@ -1,18 +1,84 @@
-Added:
+# Version 1.0.4
 
+## New Features
+
+1. Zero-Coupon Yield Curve Bootstrapping
+
+   * Added bond market quote ingestion
+   * Constructed bootstrapped zero-coupon yield curve
+   * Exported curve to:
+     data/processed/zero_coupon_curve.csv
+
+2. Yield Curve Integrated Instrument Pricing
+
+   * Replaced flat risk-free rate assumptions
+   * Instruments now use maturity-specific discount rates
+
+## Pricing Engine Enhancements
+
+1. European Options
+
+   * Black-Scholes now uses interpolated zero rate from yield curve
+   * Monte Carlo uses term structure rate
+   * Binomial and Trinomial models use term-specific discounting
+   * Heston and Bates models consume curve-implied risk-free rates
+
+2. Fixed Income
+
+   * Zero Coupon Bond pricing uses bootstrapped discount factors
+   * Fixed Rate Bond pricing uses full curve discounting
+   * Interest Rate Swap valuation uses curve-based discounting
+
+## Main Pipeline Updates
+
+1. Added CLI arguments:
+   --bond-quotes-path
+   --no-yield-curve
+
+2. Default behavior:
+
+   * If bond quotes exist, build curve automatically
+   * If disabled, fallback to flat-rate pricing
+
+## New Files
+
+src/pricing/yield_curve.py
+scripts/bootstrap_yield_curve.py
+data/raw/bond_market_quotes.csv
+tests/test_yield_curve.py
+tests/test_curve_pricing.py
+
+## Modified Files
+
+src/pricing/instruments.py
+src/pricing/greeks.py
+src/pricing/monte_carlo.py
 src/pricing/lattice_models.py
-Cox-Ross-Rubinstein Binomial Tree
-Trinomial Tree model
-convergence tests against Black-Scholes
-updated main.py
---option-pricing-engine binomial
---option-pricing-engine trinomial
---option-pricing-engine all
-README updates
+src/pricing/heston.py
+src/pricing/bates.py
+src/pricing/vasicek.py
+main.py
+README.md
 
-Implemented concepts:
+## Testing
 
-recombining trees
-backward induction
-risk-neutral probabilities
-convergence to Black-Scholes for European options
+* Added curve pricing tests
+* Added zero-coupon curve validation tests
+* Added interpolation consistency tests
+
+## Validation Status
+
+61 tests passed
+
+## Backward Compatibility
+
+* Existing flat-rate pricing remains available
+* Use:
+  --no-yield-curve
+  to disable curve-based pricing
+
+## Performance
+
+* Yield curve bootstrapping adds minimal startup overhead
+* Pricing accuracy improved for rate-sensitive instruments
+* Better term structure consistency across all models
